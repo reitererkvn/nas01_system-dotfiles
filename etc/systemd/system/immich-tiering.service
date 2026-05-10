@@ -1,0 +1,8 @@
+[Unit]
+Description=Immich SSD to HDD Tiering (Mover)
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/immich-mover.sh
+User=root

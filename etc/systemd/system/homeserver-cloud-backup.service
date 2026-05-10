@@ -1,0 +1,9 @@
+[Unit]
+Description=Homeserver Cloud Backup (Restic)
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/nas_cloud_sync.sh homeserver
+User=root
+Environment="HOME=/root"

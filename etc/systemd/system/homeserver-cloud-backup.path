@@ -1,0 +1,10 @@
+[Unit]
+Description=Trigger Homeserver Cloud Backup on Sync Done
+After=local-fs.target
+
+[Path]
+PathModified=/mnt/HDD-01/backups/homeserver/.sync_done
+Unit=homeserver-cloud-backup.service
+
+[Install]
+WantedBy=paths.target

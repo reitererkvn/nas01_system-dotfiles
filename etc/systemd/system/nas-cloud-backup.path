@@ -1,0 +1,10 @@
+[Unit]
+Description=Trigger NAS Cloud Backup on Local Sync Done
+After=local-fs.target
+
+[Path]
+PathModified=/mnt/HDD-01/backups/nas/.sync_done
+Unit=nas-cloud-backup.service
+
+[Install]
+WantedBy=paths.target
