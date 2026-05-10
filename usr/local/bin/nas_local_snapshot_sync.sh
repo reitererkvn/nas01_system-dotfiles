@@ -44,5 +44,8 @@ sync_local "/.snapshots" "$DEST_BASE/root"
 sync_local "/home/.snapshots" "$DEST_BASE/home"
 sync_local "/opt/containerd/immich/.snapshots" "$DEST_BASE/immich"
 
+echo "[+] Erzeuge Snapper-Snapshot für Immich-Archiv auf HDD..."
+sudo snapper -c immich-hdd create --description "Nightly Archive Backup"
+
 echo "[+] Lokaler Sync abgeschlossen. Erstelle Trigger-Datei für Cloud-Backup..."
 sudo touch "$DEST_BASE/.sync_done"

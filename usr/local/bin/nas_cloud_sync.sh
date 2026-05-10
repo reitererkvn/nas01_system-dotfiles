@@ -12,17 +12,13 @@ if [[ "$MODE" == "homeserver" ]]; then
 elif [[ "$MODE" == "nas" ]]; then
     CLOUD_DEST="rclone:gdrive:backups/nas_restic_repo"
     HDD_DEST="/mnt/HDD-01/backups/nas"
-    SYSTEMS=("root" "home" "immich")
+    SYSTEMS=("root" "home" "immich" "immich-data")
 else
     echo "Usage: $0 [homeserver|nas]"
     exit 1
 fi
 
 echo "[+] Starte Cloud-Backup (Restic) für: $MODE"
-
-# Prozess-Bereinigung
-pkill -9 -f "restic" 2>/dev/null
-sleep 2
 
 RESTIC_PASS="/root/.restic_pass"
 # TPS Limits für Google Drive API

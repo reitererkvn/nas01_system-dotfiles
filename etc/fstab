@@ -21,8 +21,9 @@ UUID=153de52c-5334-491e-be1a-3d3904e7a4b0  /opt/containerd/immich/.snapshots btr
 # swap was on /dev/sda5 during installation
 UUID=a5e9f619-816e-4fb9-a604-ef058c7cbfdb none            swap    sw              0       0
 /dev/sr0        /media/cdrom0   udf,iso9660 user,noauto     0       0
-UUID=dacb1a22-5346-4015-91e2-bc8cb9a6814c /mnt/HDD-01	 btrfs	 subvol=/,noatime,compress=zstd 0 0
+UUID=dacb1a22-5346-4015-91e2-bc8cb9a6814c /mnt/HDD-01    btrfs   subvol=/,noatime,compress=zstd 0 0
 UUID=dacb1a22-5346-4015-91e2-bc8cb9a6814c /mnt/HDD-01/backups btrfs subvol=/backups,noatime,compress=zstd 0 0
 UUID=dacb1a22-5346-4015-91e2-bc8cb9a6814c /mnt/HDD-01/immich btrfs subvol=/immich,noatime,compress=zstd 0 0
+UUID=dacb1a22-5346-4015-91e2-bc8cb9a6814c /mnt/HDD-01/immich/.snapshots btrfs subvol=/immich_snapshots,noatime,compress=zstd 0 0
 # mergefs
 /opt/containerd/immich/data:/mnt/HDD-01/immich /lib/immich mergerfs defaults,allow_other,cache.files=off,use_ino,category.create=ff,minfreespace=20G,fsname=mergerfs_immich 0 0
