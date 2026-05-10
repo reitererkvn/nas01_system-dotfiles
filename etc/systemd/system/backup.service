@@ -1,0 +1,14 @@
+[Unit]
+Description=Immich SSD to HDD Tiering Mover & Cloud Sync
+After=local-fs.target network-online.target
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+# Wichtig für Restic, damit der Cache gefunden wird:
+Environment="HOME=/root"
+# Die Skripte werden strikt nacheinander ausgeführt:
+ExecStart=/usr/local/bin/nas_cloud_sync.sh
+ExecStart=/usr/local/bin/immich-mover.sh
+

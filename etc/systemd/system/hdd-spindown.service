@@ -1,0 +1,10 @@
+[Unit]
+Description=Force HDD Spindown after Boot
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/hdparm -y /dev/disk/by-id/ata-TOSHIBA_DT01ACA100_16IWN23MS
+
+[Install]
+WantedBy=default.target
