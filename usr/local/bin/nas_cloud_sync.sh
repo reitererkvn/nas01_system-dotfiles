@@ -77,8 +77,14 @@ for sys in "${SYSTEMS[@]}"; do
     upload_daily "$sys"
 done
 
-# HDD Standby am Ende des NAS-Backups
-if [[ "$MODE" == "nas" ]]; then
-    echo "[+] Alle NAS-Backups abgeschlossen. Versetze HDD in den Standby..."
+# Intelligent HDD Standby (nur wenn kein anderes Backup mehr läuft)
+echo "[+] Überprüfe Backup-Status für HDD-Standby..."
+# Kurze Pause, um rclone/restic Zeit zum Beenden zu geben
+sleep 5
+
+if ! pgrep -f "restic.*backup" > /dev/null; then
+    echo "[+] Kein weiteres Backup aktiv. Versetze HDD in den Standby..."
     sudo hdparm -y /dev/sda
+else
+    echo "[!] Ein anderes Backup läuft noch. HDD bleibt aktiv."
 fi
