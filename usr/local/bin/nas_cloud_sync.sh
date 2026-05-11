@@ -67,7 +67,7 @@ upload_daily() {
         return
     fi
 
-    echo "--> [Restic] Starte Block-Abgleich (SRE Mode: --pack-size 128) ..."
+    echo "--> [Restic] Starte Block-Abgleich..."
     # SRE-Fix: Saturate 110Mbit while staying API-safe.
     # --pack-size 128: Keeps file count low.
     # -o rclone.connections=3: Parallel streams to saturate the uplink.
