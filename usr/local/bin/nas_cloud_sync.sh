@@ -1,7 +1,7 @@
 #!/bin/bash
 # nas_cloud_sync.sh
 # Lädt die Snapshots von der HDD in die Cloud (Restic).
-# SRE Optimized: Fixed API Overload and added Concurrency-Safety for HDD Standby.
+# SRE Optimized: Balanced for 110Mbit Uplink & Google Drive API Limits.
 
 MODE=$1 # 'homeserver' oder 'nas'
 
@@ -18,20 +18,29 @@ else
     exit 1
 fi
 
+# --- Global Lock (Avoid Parallel API Pressure) ---
+LOCKFILE="/var/lock/nas_cloud_sync.lock"
+exec 200>$LOCKFILE
+if ! flock -n 200; then
+    echo "[!] Ein anderes Cloud-Backup läuft bereits. Warte auf Freigabe..."
+    flock 200
+fi
+
 echo "[+] Starte Cloud-Backup (Restic) für: $MODE"
 
 RESTIC_PASS="/root/.restic_pass"
+RESTIC_CACHE="/root/.cache/restic"
+mkdir -p $RESTIC_CACHE
 
-# SRE-Fix: Reduzierung der API-Calls durch Begrenzung der Transaktionen
-# --tpslimit 5 schützt vor Google Drive 403/500 Fehlern bei zu vielen Metadaten-Updates
-# --drive-chunk-size 64M reduziert HTTP-Requests beim Upload großer Packs
-RCLONE_CONF="serve restic --stdio --tpslimit 5 --tpslimit-burst 5 --drive-chunk-size 64M"
+# SRE-Fix: Balanced for 110Mbit/s Upload
+# --tpslimit 8: Safe margin for Google Drive metadata limits.
+# --drive-chunk-size 64M: Good trade-off between memory and upload consistency.
+RCLONE_CONF="serve restic --stdio --tpslimit 8 --tpslimit-burst 10 --drive-chunk-size 64M"
 
 upload_daily() {
     local source_system=$1
     local hdd_path="$HDD_DEST/$source_system"
 
-    # Spezialfall für Immich-Daten auf der HDD (direkt in .snapshots)
     if [[ "$source_system" == "immich-data" ]]; then
         hdd_path="/mnt/HDD-01/immich/.snapshots"
     fi
@@ -43,7 +52,7 @@ upload_daily() {
     latest_hdd=$(ls -1 "$hdd_path" 2>/dev/null | grep -E '^[0-9]+$' | sort -n | tail -1)
 
     if [[ -z "$latest_hdd" ]]; then
-        echo "[FEHLER] Keine Snapshots für $source_system auf HDD gefunden!"
+        echo "[FEHLER] Keine Snapshots for $source_system auf HDD gefunden!"
         return
     fi
 
@@ -59,12 +68,14 @@ upload_daily() {
     fi
 
     echo "--> [Restic] Starte Block-Abgleich (SRE Mode: --pack-size 128) ..."
-    # SRE-Fix: --pack-size 128 bündelt Daten in größere Pakete -> massiv weniger API-Calls
-    # -o rclone.connections=4 verhindert, dass zu viele parallele Uploads die API blockieren
+    # SRE-Fix: Saturate 110Mbit while staying API-safe.
+    # --pack-size 128: Keeps file count low.
+    # -o rclone.connections=3: Parallel streams to saturate the uplink.
     if restic -o rclone.args="$RCLONE_CONF" \
-        -o rclone.connections=4 \
+        -o rclone.connections=3 \
         -r "$CLOUD_DEST" \
         --password-file "$RESTIC_PASS" \
+        --cache-dir "$RESTIC_CACHE" \
         backup "$snap_dir" \
         --pack-size 128 \
         --group-by host,tags \
@@ -80,6 +91,7 @@ upload_daily() {
     restic -o rclone.args="$RCLONE_CONF" \
         -r "$CLOUD_DEST" \
         --password-file "$RESTIC_PASS" \
+        --cache-dir "$RESTIC_CACHE" \
         forget --keep-daily 14 --keep-weekly 8 --keep-monthly 12 --keep-yearly 1 --prune --tag "$source_system"
 }
 
@@ -90,15 +102,14 @@ done
 # --- Concurrency-Safe HDD Standby ---
 echo "[+] Backup-Vorgänge für $MODE abgeschlossen. Prüfe auf parallele Syncs..."
 
-# Finde heraus, welcher Modus NICHT gerade läuft
 OTHER_MODE="nas"
 [[ "$MODE" == "nas" ]] && OTHER_MODE="homeserver"
 
-# Prüfe, ob die andere Instanz von nas_cloud_sync.sh noch aktiv ist
-# Wir filtern nach der Shell und dem Parameter, schließen aber unsere eigene PID aus.
 if pgrep -f "nas_cloud_sync.sh $OTHER_MODE" | grep -v $$ > /dev/null; then
     echo "--> [INFO] $OTHER_MODE-Sync läuft noch im Hintergrund. HDD bleibt aktiv."
 else
     echo "[+] Kein weiterer Sync aktiv. Versetze HDD (/dev/sda) in den Standby-Modus..."
     sudo hdparm -y /dev/sda
 fi
+
+flock -u 200
