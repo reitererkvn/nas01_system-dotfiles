@@ -30,12 +30,12 @@ echo "[+] Starte Cloud-Backup (Restic) für: $MODE"
 
 RESTIC_PASS="/root/.restic_pass"
 RESTIC_CACHE="/root/.cache/restic"
-mkdir -p $RESTIC_CACHE
+mkdir -p "$RESTIC_CACHE"
 
-# SRE-Fix: Balanced for 110Mbit/s Upload
-# --tpslimit 8: Safe margin for Google Drive metadata limits.
+# SRE-Fix: Optimized for new Google Drive Limits (24k QPM)
+# --tpslimit 16: Increased from 8, utilizing the new quota.
 # --drive-chunk-size 64M: Good trade-off between memory and upload consistency.
-RCLONE_CONF="serve restic --stdio --tpslimit 8 --tpslimit-burst 10 --drive-chunk-size 64M"
+RCLONE_CONF="serve restic --stdio --tpslimit 16 --tpslimit-burst 20 --drive-chunk-size 64M"
 
 upload_daily() {
     local source_system=$1
@@ -68,15 +68,16 @@ upload_daily() {
     fi
 
     echo "--> [Restic] Starte Block-Abgleich..."
-    # SRE-Fix: Saturate 110Mbit while staying API-safe.
-    # --pack-size 128: Keeps file count low.
-    # -o rclone.connections=3: Parallel streams to saturate the uplink.
+    # SRE-Fix: Utilizing 24k QPM Quota
+    # --compression auto: Optimized storage & bandwidth.
+    # --pack-size 128: Reduced file count on Google Drive.
     if restic -o rclone.args="$RCLONE_CONF" \
-        -o rclone.connections=3 \
+        -o rclone.connections=4 \
         -r "$CLOUD_DEST" \
         --password-file "$RESTIC_PASS" \
         --cache-dir "$RESTIC_CACHE" \
         backup --as-path "/$source_system" "$snap_dir" \
+        --compression auto \
         --pack-size 128 \
         --group-by host,tags \
         --tag "$source_system"; then
@@ -99,13 +100,24 @@ for sys in "${SYSTEMS[@]}"; do
     upload_daily "$sys"
 done
 
+# --- Integrity Check (Weekly SRE Practice) ---
+if [[ $(date +%u) == 7 ]]; then
+    echo "============================================================"
+    echo "[+] Sonntag erkannt: Starte wöchentlichen Integritätscheck (1GB Subset)..."
+    restic -o rclone.args="$RCLONE_CONF" \
+        -r "$CLOUD_DEST" \
+        --password-file "$RESTIC_PASS" \
+        --cache-dir "$RESTIC_CACHE" \
+        check --read-data-subset=1G
+fi
+
 # --- Concurrency-Safe HDD Standby ---
 echo "[+] Backup-Vorgänge für $MODE abgeschlossen. Prüfe auf parallele Syncs..."
 
 OTHER_MODE="nas"
 [[ "$MODE" == "nas" ]] && OTHER_MODE="homeserver"
 
-if pgrep -f "nas_cloud_sync.sh $OTHER_MODE" | grep -v $$ > /dev/null; then
+if pgrep -f "nas_cloud_sync.sh $OTHER_MODE" | grep -v "$$" > /dev/null; then
     echo "--> [INFO] $OTHER_MODE-Sync läuft noch im Hintergrund. HDD bleibt aktiv."
 else
     echo "[+] Kein weiterer Sync aktiv. Versetze HDD (/dev/sda) in den Standby-Modus..."
