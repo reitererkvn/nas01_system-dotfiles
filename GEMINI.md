@@ -38,17 +38,22 @@
 ## 5. Offene Projekte
 - **Paperless-ngx:** Einrichtung geplant (Pfade: SSD für DB/Ingest, HDD für Media).
 - **Monitoring:** Grafana/Prometheus Roadmap steht (Metriken -> Logging -> Alerting).
+- **Secret Management (In Progress):**
+    *   ✅ Vaultwarden Instanz auf NAS (Port 8080 via HTTPS/Tailscale/Caddy).
+    *   ✅ Bitwarden CLI Integration auf Desktop & NAS via API-Keys.
+    *   ✅ Dynamische Secret-Injection für `nas_cloud_sync.sh` und `immich-sre.sh`.
+    *   ⏳ Backup von SSH-Keys (Private Keys) in den Vault.
+    *   ⏳ Migration der `rclone.conf` Tokens in den Vault.
 - **Gemini Telegram Bot:** 
     - **Ziel:** Remote-Steuerung des Systems via Telegram.
-    - **Anforderung:** Vollständige Konversations-Unterstützung (CLI bleibt aktiv).
-    - **Workflow:** Session startet bei Nachricht, endet erst bei `/quit`. Integration als `systemd --user` Service.
-- **Secret Management:** Implementierung einer zentralen Lösung für Tokens, Passwörter, SSH-Keys und Passkeys (z.B. HashiCorp Vault oder Vaultwarden).
-- **Active Directory (AD) Evaluation:** Prüfung einer zentralen Identitätsverwaltung (z.B. Samba AD oder FreeIPA) zur Synchronisation von Usern und Rechten zwischen Desktop und NAS.
+    - **Anforderung:** Vollständige Konversations-Unterstützung.
+    - **Workflow:** Session startet bei Nachricht, endet bei `/quit`. Integration als `systemd --user` Service.
 
 ## 6. Abgeschlossene Projekte
 *   ✅ Hyprland Lua Migration (Mai 2026)
 *   ✅ Integration intelligenter Wallpaper-Scheduler in Lua
-*   ✅ Bereinigung Legacy Systemd-Units (hypr-sun)
+*   ✅ SRE Secret Management Foundation (Vaultwarden & CLI Automation)
+*   ✅ Zentralisierung der Dokumentations-Infrastruktur (`gemini-sync-docs.sh`)
 
 ---
 *Dieses Dokument ist die primäre Instruktion für Gemini CLI Sessions in diesem Workspace.*
