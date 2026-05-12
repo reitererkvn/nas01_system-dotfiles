@@ -1,0 +1,15 @@
+# Vaultwarden auf Port 8080 (HTTPS via Caddy)
+nas-01.taildfad90.ts.net:8080 {
+    tls {
+        get_certificate tailscale
+    }
+    reverse_proxy localhost:8000
+}
+
+# Immich auf Port 2283 (HTTPS via Caddy)
+nas-01.taildfad90.ts.net:2283 {
+    tls {
+        get_certificate tailscale
+    }
+    reverse_proxy localhost:2285
+}
