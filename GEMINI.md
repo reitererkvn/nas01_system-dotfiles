@@ -9,7 +9,7 @@
 
 ## 2. Deployment Workflow
 1.  Edit in /opt/system-dotfiles/ auf nas-01.
-2.  Deploy: sudo cp -rp /opt/system-dotfiles/<path> /<path>.
+2.  Deploy (erfordert sudo): sudo cp -rp /opt/system-dotfiles/<path> /<path>.
 
 ## 3. Kontext-Verweise
 - **Desktop System:** Siehe desktop:/opt/system-dotfiles/GEMINI.md.

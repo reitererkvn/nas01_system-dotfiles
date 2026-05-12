@@ -57,7 +57,7 @@ upload_daily() {
     fi
 
     local snap_dir="$hdd_path/$latest_hdd"
-    echo "[+] Ziel-Ordner: $snap_dir"
+    echo "[+] Quell-Subvolume: $source_system (Snapshot ID: $latest_hdd)"
 
     local dir_size_mb
     dir_size_mb=$(du -sm "$snap_dir" | awk '{print $1}')
@@ -76,7 +76,7 @@ upload_daily() {
         -r "$CLOUD_DEST" \
         --password-file "$RESTIC_PASS" \
         --cache-dir "$RESTIC_CACHE" \
-        backup "$snap_dir" \
+        backup --as-path "/$source_system" "$snap_dir" \
         --pack-size 128 \
         --group-by host,tags \
         --tag "$source_system"; then
