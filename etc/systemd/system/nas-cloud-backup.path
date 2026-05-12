@@ -3,7 +3,7 @@ Description=Trigger NAS Cloud Backup on Local Sync Done (SSD-based)
 After=local-fs.target
 
 [Path]
-PathModified=/var/lib/nas-sync-triggers/nas_local_sync.done
+PathExists=/var/lib/nas-sync-triggers/nas_local_sync.done
 Unit=nas-cloud-backup.service
 
 [Install]

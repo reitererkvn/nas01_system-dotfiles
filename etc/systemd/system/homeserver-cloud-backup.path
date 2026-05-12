@@ -3,7 +3,7 @@ Description=Trigger Homeserver Cloud Backup on Sync Done (SSD-based)
 After=local-fs.target
 
 [Path]
-PathModified=/var/lib/nas-sync-triggers/homeserver_sync.done
+PathExists=/var/lib/nas-sync-triggers/homeserver_sync.done
 Unit=homeserver-cloud-backup.service
 
 [Install]
