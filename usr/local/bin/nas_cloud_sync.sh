@@ -4,18 +4,15 @@
 # SRE Optimized: Balanced for 110Mbit Uplink & Google Drive API Limits.
 
 MODE=$1 # 'homeserver' oder 'nas'
-TRIGGER_DIR="/var/lib/nas-sync-triggers"
 
 if [[ "$MODE" == "homeserver" ]]; then
     CLOUD_DEST="rclone:gdrive:backups/homeserver_restic_repo"
     HDD_DEST="/mnt/HDD-01/backups/homeserver"
     SYSTEMS=("root" "home")
-    TRIGGER_FILE="$TRIGGER_DIR/homeserver_sync.done"
 elif [[ "$MODE" == "nas" ]]; then
     CLOUD_DEST="rclone:gdrive:backups/nas_restic_repo"
     HDD_DEST="/mnt/HDD-01/backups/nas"
     SYSTEMS=("root" "home" "immich" "immich-data")
-    TRIGGER_FILE="$TRIGGER_DIR/nas_local_sync.done"
 else
     echo "Usage: $0 [homeserver|nas]"
     exit 1
@@ -28,9 +25,6 @@ if ! flock -n 200; then
     echo "[!] Ein anderes Cloud-Backup läuft bereits. Warte auf Freigabe..."
     flock 200
 fi
-
-# Clean up trigger file early to avoid re-triggering loop
-sudo rm -f "$TRIGGER_FILE"
 
 echo "[+] Starte Cloud-Backup (Restic) für: $MODE"
 
@@ -82,7 +76,6 @@ upload_daily() {
     echo "--> [Restic] Starte Block-Abgleich..."
     (
         cd "$snap_dir" || exit 1
-        # Capture output to check for "empty snapshot"
         if restic -o rclone.args="$RCLONE_CONF" \
             -o rclone.connections=4 \
             -r "$CLOUD_DEST" \
@@ -95,8 +88,6 @@ upload_daily() {
             --tag "$source_system"; then
             echo "--> Sync für $source_system erfolgreich."
         else
-            # SRE-Fix: Ignore "snapshot is empty" as it's not a real error in this pipeline
-            # Note: Restic exit code for "no changes" might vary, so we check status/logs
             echo "--> [INFO] Restic Lauf beendet (Möglicherweise keine Änderungen oder leerer Snapshot)."
         fi
     ) || return
