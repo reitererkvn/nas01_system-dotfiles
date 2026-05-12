@@ -33,9 +33,17 @@ RESTIC_CACHE="/root/.cache/restic"
 mkdir -p "$RESTIC_CACHE"
 
 # SRE-Fix: Optimized for new Google Drive Limits (24k QPM)
-# --tpslimit 16: Increased from 8, utilizing the new quota.
-# --drive-chunk-size 64M: Good trade-off between memory and upload consistency.
 RCLONE_CONF="serve restic --stdio --tpslimit 16 --tpslimit-burst 20 --drive-chunk-size 64M"
+
+# --- Stale Lock Management ---
+# Checks for existing locks and unlocks if they are stale.
+# This avoids manual intervention after crashed backup runs.
+echo "[+] Prüfe auf verwaiste Restic-Locks..."
+restic -o rclone.args="$RCLONE_CONF" \
+    -r "$CLOUD_DEST" \
+    --password-file "$RESTIC_PASS" \
+    --cache-dir "$RESTIC_CACHE" \
+    unlock || echo "[!] Lock-Bereinigung nicht möglich oder nicht nötig."
 
 upload_daily() {
     local source_system=$1
@@ -52,7 +60,7 @@ upload_daily() {
     latest_hdd=$(ls -1 "$hdd_path" 2>/dev/null | grep -E '^[0-9]+$' | sort -n | tail -1)
 
     if [[ -z "$latest_hdd" ]]; then
-        echo "[FEHLER] Keine Snapshots for $source_system auf HDD gefunden!"
+        echo "[FEHLER] Keine Snapshots für $source_system auf HDD gefunden!"
         return
     fi
 
@@ -69,23 +77,25 @@ upload_daily() {
 
     echo "--> [Restic] Starte Block-Abgleich..."
     # SRE-Fix: Utilizing 24k QPM Quota
-    # --compression auto: Optimized storage & bandwidth.
-    # --pack-size 128: Reduced file count on Google Drive.
-    if restic -o rclone.args="$RCLONE_CONF" \
-        -o rclone.connections=4 \
-        -r "$CLOUD_DEST" \
-        --password-file "$RESTIC_PASS" \
-        --cache-dir "$RESTIC_CACHE" \
-        backup --as-path "/$source_system" "$snap_dir" \
-        --compression auto \
-        --pack-size 128 \
-        --group-by host,tags \
-        --tag "$source_system"; then
-        echo "--> Sync für $source_system erfolgreich."
-    else
-        echo "--> [FEHLER] Restic für $source_system fehlgeschlagen!"
-        return
-    fi
+    # Restic on this NAS lacks --as-path. Using 'cd' and '.' instead.
+    (
+        cd "$snap_dir" || exit 1
+        if restic -o rclone.args="$RCLONE_CONF" \
+            -o rclone.connections=4 \
+            -r "$CLOUD_DEST" \
+            --password-file "$RESTIC_PASS" \
+            --cache-dir "$RESTIC_CACHE" \
+            backup . \
+            --compression auto \
+            --pack-size 128 \
+            --group-by host,tags \
+            --tag "$source_system"; then
+            echo "--> Sync für $source_system erfolgreich."
+        else
+            echo "--> [FEHLER] Restic für $source_system fehlgeschlagen!"
+            exit 1
+        fi
+    ) || return
 
     # Retention Policy
     echo "--> [Restic] Bereinige alte Snapshots (Retention Policy) ..."
@@ -117,7 +127,8 @@ echo "[+] Backup-Vorgänge für $MODE abgeschlossen. Prüfe auf parallele Syncs.
 OTHER_MODE="nas"
 [[ "$MODE" == "nas" ]] && OTHER_MODE="homeserver"
 
-if pgrep -f "nas_cloud_sync.sh $OTHER_MODE" | grep -v "$$" > /dev/null; then
+# Fix: Use safer pgrep/grep logic
+if pgrep -f "nas_cloud_sync.sh $OTHER_MODE" > /dev/null; then
     echo "--> [INFO] $OTHER_MODE-Sync läuft noch im Hintergrund. HDD bleibt aktiv."
 else
     echo "[+] Kein weiterer Sync aktiv. Versetze HDD (/dev/sda) in den Standby-Modus..."
