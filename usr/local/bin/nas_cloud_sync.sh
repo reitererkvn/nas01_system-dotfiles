@@ -6,11 +6,11 @@
 MODE=$1 # 'homeserver' oder 'nas'
 
 if [[ "$MODE" == "homeserver" ]]; then
-    CLOUD_DEST="rclone:gdrive,shared_with_me:backups/homeserver_restic_repo"
+    CLOUD_DEST="rclone:gdrive:backups/homeserver_restic_repo"
     HDD_DEST="/mnt/HDD-01/backups/homeserver"
     SYSTEMS=("root" "home")
 elif [[ "$MODE" == "nas" ]]; then
-    CLOUD_DEST="rclone:gdrive,shared_with_me:backups/nas_restic_repo"
+    CLOUD_DEST="rclone:gdrive:backups/nas_restic_repo"
     HDD_DEST="/mnt/HDD-01/backups/nas"
     SYSTEMS=("root" "home" "immich" "immich-data")
 else
