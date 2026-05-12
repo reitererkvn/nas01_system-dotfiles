@@ -30,14 +30,13 @@ echo "[+] Starte Cloud-Backup (Restic) für: $MODE"
 
 RESTIC_PASS="/root/.restic_pass"
 RESTIC_CACHE="/root/.cache/restic"
+EXCLUDE_FILE="/etc/rclone/exclude-list.txt"
 mkdir -p "$RESTIC_CACHE"
 
 # SRE-Fix: Optimized for new Google Drive Limits (24k QPM)
 RCLONE_CONF="serve restic --stdio --tpslimit 16 --tpslimit-burst 20 --drive-chunk-size 64M"
 
 # --- Stale Lock Management ---
-# Checks for existing locks and unlocks if they are stale.
-# This avoids manual intervention after crashed backup runs.
 echo "[+] Prüfe auf verwaiste Restic-Locks..."
 restic -o rclone.args="$RCLONE_CONF" \
     -r "$CLOUD_DEST" \
@@ -76,8 +75,7 @@ upload_daily() {
     fi
 
     echo "--> [Restic] Starte Block-Abgleich..."
-    # SRE-Fix: Utilizing 24k QPM Quota
-    # Restic on this NAS lacks --as-path. Using 'cd' and '.' instead.
+    # SRE-Fix: Utilizing 24k QPM Quota & Excluding junk to avoid HDD Seek-Killers
     (
         cd "$snap_dir" || exit 1
         if restic -o rclone.args="$RCLONE_CONF" \
@@ -85,6 +83,7 @@ upload_daily() {
             -r "$CLOUD_DEST" \
             --password-file "$RESTIC_PASS" \
             --cache-dir "$RESTIC_CACHE" \
+            --exclude-file "$EXCLUDE_FILE" \
             backup . \
             --compression auto \
             --pack-size 128 \
@@ -127,12 +126,11 @@ echo "[+] Backup-Vorgänge für $MODE abgeschlossen. Prüfe auf parallele Syncs.
 OTHER_MODE="nas"
 [[ "$MODE" == "nas" ]] && OTHER_MODE="homeserver"
 
-# Fix: Use safer pgrep/grep logic
 if pgrep -f "nas_cloud_sync.sh $OTHER_MODE" > /dev/null; then
     echo "--> [INFO] $OTHER_MODE-Sync läuft noch im Hintergrund. HDD bleibt aktiv."
 else
     echo "[+] Kein weiterer Sync aktiv. Versetze HDD (/dev/sda) in den Standby-Modus..."
-    sudo hdparm -y /dev/sda
+    sudo /sbin/hdparm -y /dev/disk/by-id/ata-TOSHIBA_DT01ACA100_16IWN23MS
 fi
 
 flock -u 200
