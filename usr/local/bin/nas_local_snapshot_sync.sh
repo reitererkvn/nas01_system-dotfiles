@@ -3,6 +3,7 @@
 # Spiegelt lokale SSD-Snapshots auf die HDD für lokale Redundanz.
 
 DEST_BASE="/mnt/HDD-01/backups/nas"
+TRIGGER_DIR="/var/lib/nas-sync-triggers"
 
 sync_local() {
     local src_dir=$1
@@ -47,5 +48,6 @@ sync_local "/opt/containerd/immich/.snapshots" "$DEST_BASE/immich"
 echo "[+] Erzeuge Snapper-Snapshot für Immich-Archiv auf HDD..."
 sudo snapper -c immich-hdd create --description "Nightly Archive Backup"
 
-echo "[+] Lokaler Sync abgeschlossen. Erstelle Trigger-Datei für Cloud-Backup..."
-sudo touch "$DEST_BASE/.sync_done"
+echo "[+] Lokaler Sync abgeschlossen. Erstelle Trigger-Datei für Cloud-Backup (SSD-based)..."
+sudo mkdir -p "$TRIGGER_DIR"
+sudo touch "$TRIGGER_DIR/nas_local_sync.done"
