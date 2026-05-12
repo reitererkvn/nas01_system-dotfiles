@@ -33,7 +33,7 @@ RESTIC_CACHE="/root/.cache/restic"
 mkdir -p "$RESTIC_CACHE"
 
 # SRE-Fix: Optimized for new Google Drive Limits (24k QPM)
-RCLONE_CONF="serve restic --stdio --tpslimit 16 --tpslimit-burst 20 --drive-chunk-size 64M"
+RCLONE_CONF="serve restic --stdio --tpslimit 200 --tpslimit-burst 250 --drive-chunk-size 64M"
 
 # --- Stale Lock Management ---
 echo "[+] Prüfe auf verwaiste Restic-Locks..."
@@ -77,7 +77,7 @@ upload_daily() {
     (
         cd "$snap_dir" || exit 1
         if restic -o rclone.args="$RCLONE_CONF" \
-            -o rclone.connections=4 \
+            -o rclone.connections=16 \
             -r "$CLOUD_DEST" \
             --password-file "$RESTIC_PASS" \
             --cache-dir "$RESTIC_CACHE" \
