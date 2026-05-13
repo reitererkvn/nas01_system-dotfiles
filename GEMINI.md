@@ -44,6 +44,8 @@
     *   ✅ Dynamische Secret-Injection für `nas_cloud_sync.sh` und `immich-sre.sh`.
     *   ⏳ Backup von SSH-Keys (Private Keys) in den Vault.
     *   ⏳ Migration der `rclone.conf` Tokens in den Vault.
+- **Ansible Playbooks:** Automatisierung des System-Setups (Pakete, Services, Configs) für Desktop und NAS.
+- **DNS-Infrastruktur:** Lokaler DNS-Server (z.B. Pi-hole/AdGuard) für herstellerunabhängige Namensauflösung (ohne Tailscale-Zwang).
 - **Gemini Telegram Bot:** 
     - **Ziel:** Remote-Steuerung des Systems via Telegram.
     - **Anforderung:** Vollständige Konversations-Unterstützung.
