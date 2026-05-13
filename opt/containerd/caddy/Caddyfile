@@ -13,3 +13,27 @@ nas-01.taildfad90.ts.net:2283 {
     }
     reverse_proxy localhost:2285
 }
+
+# Semaphore (Ansible UI)
+nas-01.taildfad90.ts.net:3000 {
+    tls {
+        get_certificate tailscale
+    }
+    reverse_proxy localhost:13000
+}
+
+# Grafana (Monitoring Dashboards)
+nas-01.taildfad90.ts.net:3001 {
+    tls {
+        get_certificate tailscale
+    }
+    reverse_proxy localhost:13001
+}
+
+# Prometheus (Metrics)
+nas-01.taildfad90.ts.net:9090 {
+    tls {
+        get_certificate tailscale
+    }
+    reverse_proxy localhost:19090
+}
