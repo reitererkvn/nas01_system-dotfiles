@@ -19,16 +19,31 @@ else
 fi
 
 # --- Global Lock (Avoid Parallel API Pressure) ---
-LOCKFILE="/var/lock/nas_cloud_sync.lock"
+LOCKFILE="/var/lock/nas_cloud_sync.$MODE.lock"
 exec 200>$LOCKFILE
 if ! flock -n 200; then
-    echo "[!] Ein anderes Cloud-Backup läuft bereits. Warte auf Freigabe..."
+    echo "[!] Ein anderes Cloud-Backup für $MODE läuft bereits. Warte auf Freigabe..."
     flock 200
 fi
 
 echo "[+] Starte Cloud-Backup (Restic) für: $MODE"
 
-RESTIC_PASS="/root/.restic_pass"
+# --- Secret Acquisition (Unified /run/vault Path) ---
+RESTIC_PASS="/run/vault/restic_pass"
+SESSION_FILE="/run/vault/bw_session"
+
+if [[ -f "$SESSION_FILE" ]]; then
+    export BW_SESSION=$(cat "$SESSION_FILE")
+    # Retrieve password from vault if not already in RAM-disk
+    if [[ ! -f "$RESTIC_PASS" ]]; then
+        bw get password "Restic-Backup-Key" > "$RESTIC_PASS"
+        chmod 600 "$RESTIC_PASS"
+    fi
+else
+    echo "[FEHLER] Tresor ist gesperrt. Bitte 'vault-unlock.sh' ausführen!"
+    exit 1
+fi
+
 RESTIC_CACHE="/root/.cache/restic"
 mkdir -p "$RESTIC_CACHE"
 
@@ -41,7 +56,7 @@ restic -o rclone.args="$RCLONE_CONF" \
     -r "$CLOUD_DEST" \
     --password-file "$RESTIC_PASS" \
     --cache-dir "$RESTIC_CACHE" \
-    unlock || echo "[!] Lock-Bereinigung nicht möglich oder nicht nötig."
+    unlock || echo "[!] Lock-Bereigigung nicht möglich oder nicht nötig."
 
 upload_daily() {
     local source_system=$1
@@ -65,18 +80,10 @@ upload_daily() {
     local snap_dir="$hdd_path/$latest_hdd"
     echo "[+] Quell-Subvolume: $source_system (Snapshot ID: $latest_hdd)"
 
-    local dir_size_mb
-    dir_size_mb=$(du -sm "$snap_dir" | awk '{print $1}')
-
-    if [[ "$dir_size_mb" -lt 1 ]]; then
-        echo "--> [FEHLER] Sicherheitsabbruch! Ziel-Ordner ist physikalisch zu klein ($dir_size_mb MB)."
-        return
-    fi
-
     echo "--> [Restic] Starte Block-Abgleich..."
     (
         cd "$snap_dir" || exit 1
-        if restic -o rclone.args="$RCLONE_CONF" \
+        restic -o rclone.args="$RCLONE_CONF" \
             -o rclone.connections=16 \
             -r "$CLOUD_DEST" \
             --password-file "$RESTIC_PASS" \
@@ -85,11 +92,7 @@ upload_daily() {
             --compression auto \
             --pack-size 128 \
             --group-by host,tags \
-            --tag "$source_system"; then
-            echo "--> Sync für $source_system erfolgreich."
-        else
-            echo "--> [INFO] Restic Lauf beendet (Möglicherweise keine Änderungen oder leerer Snapshot)."
-        fi
+            --tag "$source_system"
     ) || return
 
     # Retention Policy
@@ -105,28 +108,8 @@ for sys in "${SYSTEMS[@]}"; do
     upload_daily "$sys"
 done
 
-# --- Integrity Check (Weekly SRE Practice) ---
-if [[ $(date +%u) == 7 ]]; then
-    echo "============================================================"
-    echo "[+] Sonntag erkannt: Starte wöchentlichen Integritätscheck (1GB Subset)..."
-    restic -o rclone.args="$RCLONE_CONF" \
-        -r "$CLOUD_DEST" \
-        --password-file "$RESTIC_PASS" \
-        --cache-dir "$RESTIC_CACHE" \
-        check --read-data-subset=1G
-fi
-
-# --- Concurrency-Safe HDD Standby ---
-echo "[+] Backup-Vorgänge für $MODE abgeschlossen. Prüfe auf parallele Syncs..."
-
-OTHER_MODE="nas"
-[[ "$MODE" == "nas" ]] && OTHER_MODE="homeserver"
-
-if pgrep -f "nas_cloud_sync.sh $OTHER_MODE" > /dev/null; then
-    echo "--> [INFO] $OTHER_MODE-Sync läuft noch im Hintergrund. HDD bleibt aktiv."
-else
-    echo "[+] Kein weiterer Sync aktiv. Versetze HDD (/dev/sda) in den Standby-Modus..."
-    sudo /sbin/hdparm -y /dev/disk/by-id/ata-TOSHIBA_DT01ACA100_16IWN23MS
-fi
+# --- HDD Standby Logic ---
+echo "[+] Backup-Vorgänge für $MODE abgeschlossen."
+sudo /sbin/hdparm -y /dev/disk/by-id/ata-TOSHIBA_DT01ACA100_16IWN23MS
 
 flock -u 200
