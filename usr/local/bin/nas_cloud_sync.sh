@@ -35,7 +35,7 @@ SESSION_FILE="/run/vault/bw_session"
 if [[ -f "$SESSION_FILE" ]]; then
     export BW_SESSION=$(cat "$SESSION_FILE")
     # Retrieve password from vault if not already in RAM-disk
-    if [[ ! -f "$RESTIC_PASS" ]]; then
+    if [[ ! -s "$RESTIC_PASS" ]]; then
         bw get password "Restic-Backup-Key" > "$RESTIC_PASS"
         chmod 600 "$RESTIC_PASS"
     fi
