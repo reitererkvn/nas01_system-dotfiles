@@ -18,10 +18,11 @@ echo "[Vault] Unlocking Bitwarden Vault..."
 BW_SESSION_TMP=$(bw unlock --raw)
 
 if [ $? -eq 0 ] && [ -n "$BW_SESSION_TMP" ]; then
-    # Write the session token
-    echo "$BW_SESSION_TMP" | sudo tee "$SESSION_FILE" > /dev/null
+    # Write the session token WITHOUT newline (crucial for bw CLI)
+    printf "%s" "$BW_SESSION_TMP" | sudo tee "$SESSION_FILE" > /dev/null
     sudo chmod 600 "$SESSION_FILE"
     
+    echo ""
     echo "[Erfolg] Tresor entsperrt. Session gespeichert in $SESSION_FILE"
     echo "[Info] Automatisierte Dienste können nun auf Secrets zugreifen."
 else
