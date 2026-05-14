@@ -12,6 +12,6 @@ scrape_configs:
       - targets: ['192.168.178.22:9100']
         labels:
           instance: 'Desktop'
-      - targets: ['node-exporter-nas:9101']
+      - targets: ['node-exporter-nas:9100']
         labels:
           instance: 'NAS'

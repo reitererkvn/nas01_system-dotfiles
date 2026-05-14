@@ -53,6 +53,8 @@ services:
       - "13001:3000"
     volumes:
       - /opt/containerd/grafana/data:/var/lib/grafana
+      - /opt/containerd/grafana/provisioning:/etc/grafana/provisioning
+      - /opt/containerd/grafana/dashboards:/etc/grafana/provisioning/dashboards/definitions
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASS}
     restart: unless-stopped
