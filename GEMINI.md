@@ -23,17 +23,19 @@
 *   **Automation:** `sun.lua` verwaltet Wallpaper-Wechsel event-basiert (ersetzt `hypr-sun.sh` und Systemd-Timer).
 
 ## 3. Workflows & Repo-Exklusivität (Source of Truth)
-*   **STRIKTE TRENNUNG:** Dieses Repo (`~/.dotfiles/`) enthält AUSSCHLIESSLICH User-Konfigurationen.
-    *   **NAS-Skripte:** (z.B. `nas_cloud_sync.sh`, `immich-mover.sh`) dürfen hier NIEMALS existieren oder bearbeitet werden. Diese liegen ausschließlich auf `nas-01:/opt/system-dotfiles/`.
-    *   **System-Skripte:** (z.B. Snapshot-Management) liegen ausschließlich in `/opt/system-dotfiles/` auf dem Desktop.
-*   **Repo-First:** Änderungen an Skripten MÜSSEN zuerst in den jeweiligen Repositories vorgenommen werden.
-*   **Doc-Sync (MANDATORY):** Nach Änderungen an einer `GEMINI.md` muss das Skript `gemini-sync-docs.sh` ausgeführt werden, um alle Repos synchron zu halten.
-*   **Deployment:** Nach Repo-Änderung erfolgt das Deployment nach `/usr/local/bin/` (System) oder via `dotfiles-sync.sh` (User).
+*   **STRIKTE TRENNUNG:** 
+    *   **User-Space (`~/.dotfiles/`):** Enthält User-Konfigurationen (Zsh, Hyprland, etc.) und das Master-Ansible-Playbook für Infrastruktur-Vorbereitung.
+    *   **NAS-System (`nas-01:/opt/system-dotfiles/`):** Source of Truth für NAS-Dienste (Semaphore, Caddy, Backup-Skripte).
+    *   **Desktop-System (`/opt/system-dotfiles/`):** Source of Truth für Desktop-Systemd-Units und Hardware-Skripte.
+*   **Secret Management:**
+    *   **RAM-Vault:** Einmaliges Entsperren via `sudo vault-unlock.sh` pro Boot. Token liegt in `/run/vault/bw_session`.
+    *   **Zero-Leak:** Keine Klartext-Passwörter in Git. Docker nutzt `${VAR}` in Compose-Files, gespeist aus lokalen `.env` Dateien.
+*   **Repo-First:** Änderungen MÜSSEN zuerst im jeweiligen Repository erfolgen. Deployment via `dotfiles-sync.sh` (User) oder manueller Kopie (System).
 
 ## 4. Bekannte Fallstricke & Fixes
-*   **Permissions:** Skripte in `/opt/system-dotfiles/` benötigen das Executable-Bit.
-*   **SSH Auth:** Desktop-Root nutzt `id_ed25519_nas`. User `kevin` nutzt Desktop-Agent-Forwarding (`-A`).
-*   **Colors:** `colors.lua` konvertiert `RRGGBBAA` (Env) zu `rgba()` (Hyprland), um Hex-Format-Konflikte (AARRGGBB) zu vermeiden.
+*   **Bitwarden Token:** Der Session-Token in `/run/vault/bw_session` darf keinen Zeilenumbruch enthalten (via `printf` schreiben).
+*   **Ownership:** Alle Verzeichnisse unter `/opt/containerd/` werden durch Ansible auf `root:root` vereinheitlicht, um Idempotenz-Konflikte zu vermeiden.
+*   **Semaphore Self-Restart:** Docker-Tasks in Semaphore nutzen den Tag `infrastructure_only`, um zu verhindern, dass Semaphore sich während des Laufs selbst absägt.
 
 ## 5. Offene Projekte
 - **Paperless-ngx:** Einrichtung geplant (Pfade: SSD für DB/Ingest, HDD für Media).
