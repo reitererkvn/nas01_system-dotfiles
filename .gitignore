@@ -1,4 +1,4 @@
 .immich/.env
 *.env
-**/ .env
+**/.env
 
