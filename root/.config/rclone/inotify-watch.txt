@@ -1,0 +1,6 @@
+/opt/system-dotfiles/
+/home/kevin/.dotfiles/
+/home/kevin/Dokumente/
+/home/kevin/Musik/
+/home/kevin/Bilder/
+/home/kevin/Videos/

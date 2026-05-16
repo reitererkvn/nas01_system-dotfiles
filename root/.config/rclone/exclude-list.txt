@@ -1,0 +1,60 @@
+# ====================================================================
+# 1. KERNEL & ROOT-MOUNTS (Strikt absolut, verhindert Datenverlust!)
+# ====================================================================
+/dev/**
+/proc/**
+/sys/**
+/run/**
+/tmp/**
+/var/tmp/**
+/var/run/**
+/mnt/**
+/media/**
+/lost+found/**
+
+# ====================================================================
+# 2. SWAP & MÜLL (Globalisiert)
+# ====================================================================
+/swap/**
+/swapfile
+*.lock
+**/.Trash/**
+**/.local/share/Trash/**
+
+# ====================================================================
+# 3. CACHES & OVERLAYS (Massiv verdichtet durch **)
+# ====================================================================
+**/.npm/**
+**/.cache/**
+/var/cache/**
+/var/lib/docker/**
+/var/lib/containers/**
+/var/lib/containerd/**
+/root/.config/pulse/**
+
+# ====================================================================
+# 4. SOCKETS & PIPES (Globalisiert für alle User)
+# ====================================================================
+**/.steam/steam.pipe
+**/.steampid
+**/.steampath
+**/.omnissa/viewctrl/**
+**/.local/share/akonadi/socket-*
+
+# ====================================================================
+# 5. CREDENTIALS & BROWSER (Schützt ab sofort auch zukünftige User)
+# ====================================================================
+**/.ssh/**
+**/.gnupg/**
+**/.pki/**
+**/rclone.conf
+**/.aws/**
+**/.docker/config.json
+**/.npmrc
+**/.netrc
+*history
+**/.config/google-chrome/**
+**/.config/chromium/**
+**/.config/BraveSoftware/**
+**/.config/microsoft-edge/**
+**/.mozilla/**

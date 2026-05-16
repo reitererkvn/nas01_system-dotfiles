@@ -1,0 +1,12 @@
+[Unit]
+Description=Rclone gdrive Live Sync via Inotify
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/bash %h/.local/bin/gdrive-live-sync.sh
+Restart=on-failure
+RestartSec=10
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=default.target
