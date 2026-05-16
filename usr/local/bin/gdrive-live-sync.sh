@@ -1,6 +1,6 @@
 #!/bin/bash
-WATCH_LIST="$HOME/.config/rclone/inotify-watch.txt"
-EXCLUDE_FILE="$HOME/.config/rclone/exclude-list.txt"
+WATCH_LIST="/root/.config/rclone/inotify-watch.txt"
+EXCLUDE_FILE="/root/.config/rclone/exclude-list.txt"
 CLOUD_REMOTE="gdrive:"
 CLOUD_BASE="backups/live/nas-01"
 
